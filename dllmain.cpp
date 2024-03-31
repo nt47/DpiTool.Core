@@ -3,8 +3,6 @@
 #include"utils.h"
 #include"misc.h"
 
-#include <metahost.h>
-#pragma comment(lib, "mscoree.lib")
 
 
 
@@ -233,99 +231,11 @@ void thread_main()
 }
 
 
-ICLRRuntimeHost* StartCLR(LPCWSTR dotNetVersion)
-{
-    HRESULT hr;
-
-    ICLRMetaHost* pClrMetaHost = NULL;
-    ICLRRuntimeInfo* pClrRuntimeInfo = NULL;
-    ICLRRuntimeHost* pClrRuntimeHost = NULL;
-
-    // Get the CLRMetaHost that tells us about .NET on this machine
-    hr = CLRCreateInstance(CLSID_CLRMetaHost, IID_ICLRMetaHost, (LPVOID*)&pClrMetaHost);
-    if (hr == S_OK)
-    {
-        // Get the runtime information for the particular version of .NET
-        hr = pClrMetaHost->GetRuntime(dotNetVersion, IID_PPV_ARGS(&pClrRuntimeInfo));
-        if (hr == S_OK)
-        {
-            // Check if the specified runtime can be loaded into the process. This
-            // method will take into account other runtimes that may already be
-            // loaded into the process and set pbLoadable to TRUE if this runtime can
-            // be loaded in an in-process side-by-side fashion.
-            BOOL fLoadable;
-            hr = pClrRuntimeInfo->IsLoadable(&fLoadable);
-            if ((hr == S_OK) && fLoadable)
-            {
-                // Load the CLR into the current process and return a runtime interface
-                // pointer.
-                hr = pClrRuntimeInfo->GetInterface(CLSID_CLRRuntimeHost,
-                    IID_PPV_ARGS(&pClrRuntimeHost));
-                if (hr == S_OK)
-                {
-                    // Start it. This is okay to call even if the CLR is already running
-                    pClrRuntimeHost->Start();
-                    return pClrRuntimeHost;
-                }
-            }
-        }
-    }
-
-    // Cleanup if failed
-    if (pClrRuntimeHost)
-    {
-        pClrRuntimeHost->Release();
-        pClrRuntimeHost = NULL;
-    }
-    if (pClrRuntimeInfo)
-    {
-        pClrRuntimeInfo->Release();
-        pClrRuntimeInfo = NULL;
-    }
-    if (pClrMetaHost)
-    {
-        pClrMetaHost->Release();
-        pClrMetaHost = NULL;
-    }
-
-    return NULL;
-}
-
-
 bool IsDebugged()
 {
-    HRESULT hr;
-    DWORD result=0;
-    bool ret = false;
-
-    TCHAR tzPath[MAX_PATH];
-
-    wcscpy_s(tzPath, g_shared_data.dll_folder);
-    lstrcat(tzPath, TEXT("\\DpiTool.Common.dll"));
-
-    // Secure a handle to the CLR v4.0
-    ICLRRuntimeHost* pClr = StartCLR(L"v4.0.30319");
-    if (pClr != NULL)
-    {
-        hr = pClr->ExecuteInDefaultAppDomain(
-            tzPath,
-            L"DpiTool.Common.Misc",
-            L"IsDebugged",
-            L"{}",
-            &result);
-        //MessageBox(L"ret is %d", result);
-    }
-    else
-    {
-        MessageBox(L"CLR Init error");
-    }
-
-    if (result == 1)
-        return true;
 
     return false;
 }
-
 
 void thread_check_debugger()
 {
@@ -341,8 +251,16 @@ void thread_check_debugger()
 
     while (1)
     {
+        //MessageBox(0, g_shared_data.target_exe_name,0,0);
+        //MessageBox(0, g_shared_data.target_exe_folder, 0, 0);
+
         if (IsAllModulesLoaded() && !IsDebugged())
+        {
+            if (wcscmp(g_shared_data.target_exe_name, L"cmd.exe") == 0)//wcscmp==0而不是返回true
+                simulateKeyPress(VK_RETURN);
+
             break;
+        }
 
         Sleep(1000);
     }
