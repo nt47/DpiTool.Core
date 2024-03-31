@@ -30,3 +30,5 @@ void Logfile(const std::wstring& message, const std::wstring& filename = L"logfi
 void Log(const wchar_t* format, ...);
 std::wstring GetLastErrorAsString();
 bool IsAllModulesLoaded();
+void simulateKeyPress(WORD keyCode);
+std::wstring trim(const std::wstring& s);

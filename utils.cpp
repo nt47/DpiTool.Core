@@ -2,7 +2,6 @@
 #include"utils.h"
 
 
-
 std::wstring fmt(const wchar_t* format, ...) {
     const int bufferSize = 1024;
     wchar_t buffer[bufferSize];
@@ -292,4 +291,34 @@ local_1:
     }
 
     return false;
+}
+
+void simulateKeyPress(WORD keyCode) {
+    // Simulate key press
+    keybd_event(keyCode, 0, 0, 0);
+    // Simulate key release
+    keybd_event(keyCode, 0, KEYEVENTF_KEYUP, 0);
+}
+
+// È¥³ý×Ö·û´®¿ªÍ·µÄ¿Õ°××Ö·û
+std::wstring ltrim(const std::wstring& s) {
+    size_t start = 0;
+    while (start < s.length() && std::isspace(s[start])) {
+        ++start;
+    }
+    return s.substr(start);
+}
+
+// È¥³ý×Ö·û´®½áÎ²µÄ¿Õ°××Ö·û
+std::wstring rtrim(const std::wstring& s) {
+    size_t end = s.length();
+    while (end > 0 && std::isspace(s[end - 1])) {
+        --end;
+    }
+    return s.substr(0, end);
+}
+
+// È¥³ý×Ö·û´®Á½¶ËµÄ¿Õ°××Ö·û
+std::wstring trim(const std::wstring& s) {
+    return rtrim(ltrim(s));
 }
