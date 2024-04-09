@@ -3,8 +3,8 @@
 #include"utils.h"
 #include"misc.h"
 
-
-
+#include "metahost.h"
+#pragma comment(lib,"mscoree.lib")
 
 #define WM_SET_HOOK (WM_USER + 1)//括号一定要加
 #define WM_RESIZE_FORM (WM_USER + 2)
@@ -231,9 +231,72 @@ void thread_main()
 }
 
 
+void Bootstrap()
+{
+    ICLRMetaHost* pMetaHost = nullptr;
+    ICLRMetaHostPolicy* pMetaHostPolicy = nullptr;
+    ICLRRuntimeHost* pRuntimeHost = nullptr;
+    ICLRRuntimeInfo* pRuntimeInfo = nullptr;
+
+    DWORD dwRet = 0;
+
+    TCHAR tzPath[MAX_PATH];
+
+    wcscpy_s(tzPath, g_shared_data.src_dll_folder);
+    lstrcat(tzPath, TEXT("\\Sandbox.exe"));
+
+
+
+    HRESULT hr = CLRCreateInstance(CLSID_CLRMetaHost, IID_ICLRMetaHost, (LPVOID*)&pMetaHost);
+    hr = pMetaHost->GetRuntime(L"v4.0.30319", IID_PPV_ARGS(&pRuntimeInfo));
+
+    if (FAILED(hr)) {
+        MessageBox(0, L"启动出错", L"Error", MB_OK | MB_ICONERROR);
+        goto cleanup;
+    }
+
+    hr = pRuntimeInfo->GetInterface(CLSID_CLRRuntimeHost, IID_PPV_ARGS(&pRuntimeHost));
+    hr = pRuntimeHost->Start();
+
+    hr = pRuntimeHost->ExecuteInDefaultAppDomain(//第一个参数是绝对路径
+        tzPath, //不会产生新的进程
+        L"Sandbox.Program",
+        L"EntryPoint",
+        L"{}",
+        &dwRet);
+
+    if (FAILED(hr))
+    {
+        //MessageBox(L"[!] Sandbox failed: %08x", hr);
+        MessageBox(GetLastErrorAsString().c_str());
+    }
+    else
+    {
+        MessageBox(L"ret is %d", dwRet);
+    }
+
+    hr = pRuntimeHost->Stop();
+
+cleanup:
+    if (pRuntimeInfo != nullptr) {
+        pRuntimeInfo->Release();
+        pRuntimeInfo = nullptr;
+    }
+
+    if (pRuntimeHost != nullptr) {
+        pRuntimeHost->Release();
+        pRuntimeHost = nullptr;
+    }
+
+    if (pMetaHost != nullptr) {
+        pMetaHost->Release();
+        pMetaHost = nullptr;
+    }
+}
+
+
 bool IsDebugged()
 {
-
     return false;
 }
 
@@ -253,6 +316,13 @@ void thread_check_debugger()
     {
         //MessageBox(0, g_shared_data.target_exe_name,0,0);
         //MessageBox(0, g_shared_data.target_exe_folder, 0, 0);
+
+        //文件句柄占用
+        //hr=80004002 code=126 msg=找不到指定模块...已解决
+        //Bootstrap();
+
+
+        //LoadLibrary(L"C:\\Users\\Pudge\\source\\repos\\Dpi\\DpiTool.Loader\\DpiTool.Loader\\bin\\Release\\DpiTool.Bootstrapper.dll");
 
         if (IsAllModulesLoaded() && !IsDebugged())
         {
