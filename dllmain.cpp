@@ -19,7 +19,7 @@ const bool OFF = false;
 RECT rcWindow = {};
 WNDPROC oWndProc = NULL;
 float scaleRatio = 1.0;
-float scaleRatio2 = 0.5;
+float scaleRatio2 = 2.2;
 
 HHOOK g_hHook = NULL;
 bool g_bHome = false;
