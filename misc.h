@@ -10,4 +10,5 @@ typedef struct _SHARED_DATA
 
 } SHARED_DATA, * PSHARED_DATA;
 
+
 bool ShareMemory(PSHARED_DATA new_shared_data);

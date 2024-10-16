@@ -95,7 +95,7 @@ void Logfile(const std::wstring& message, const std::wstring& filename)
 
                 // 获取DLL路径
     TCHAR dllPath[MAX_PATH];
-    GetModuleFileName(GetModuleHandle(NULL), dllPath, MAX_PATH);
+    GetModuleFileName(GetModuleHandle(NULL), dllPath, MAX_PATH);//调试时不要使用手动映射
 
     // 去掉文件名和后缀，只留下目录
     PathRemoveFileSpec(dllPath);
@@ -258,7 +258,7 @@ local_1:
         Sleep(100);
     }
 
-    std::cout << "Check for AreAllModulesLoadedEx!" << std::endl;
+    //std::cout << "Check for AreAllModulesLoadedEx!" << std::endl;
 
     for (int attempt = 0; attempt < 5; ++attempt) {
 
@@ -275,7 +275,7 @@ local_1:
         if (moduleCount == previousModuleCount) {
             ++sameCount;
             if (sameCount == 5) {
-                std::cout << "All Modules Loaded!" << std::endl;
+                //std::cout << "All Modules Loaded!" << std::endl;
                 return true;
             }
         }

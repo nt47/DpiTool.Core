@@ -6,8 +6,8 @@
 #include "metahost.h"
 #pragma comment(lib,"mscoree.lib")
 
-#define WM_SET_HOOK (WM_USER + 1)//括号一定要加
-#define WM_RESIZE_FORM (WM_USER + 2)
+#define WM_SET_HOOK (WM_USER + 100)//括号一定要加
+#define WM_RESIZE_FORM (WM_USER + 200)
 
 const bool ON = true;
 const bool OFF = false;
@@ -29,7 +29,15 @@ HWND g_BugWindow = NULL;
 
 SHARED_DATA g_shared_data;
 
-static HWND TraverseForms()
+
+// 获取用户数据
+void* GetWindowUserData(HWND hWnd)
+{
+    // 从窗口中获取用户数据
+    return reinterpret_cast<void*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
+}
+
+static HWND TraceForms()
 {
     // 目标进程ID，你需要替换成你要遍历的进程ID
     DWORD targetProcessId = GetCurrentProcessId();
@@ -63,14 +71,17 @@ static HWND TraverseForms()
 
             DWORD parentWindowPid;
             GetWindowThreadProcessId(parentWindow, &parentWindowPid);
+            
 
             if (parentWindow == NULL && bIsVisible)//基本情况
             {
+                //Log(L"MainWindow| 窗口标题 : %s | 窗口类 : %s | 句柄 : %x | 父窗口 : %x |是否可见 : %s |", wcslen(szTitle) ? szTitle : L"无", szClass, childWindow, parentWindow, bIsVisible ? L"是" : L"否");
                 return childWindow;
             }
 
-            if (parentWindowPid != targetProcessId && bIsVisible)//特殊情况
+            if (parentWindowPid != targetProcessId && bIsVisible && GetWindowUserData(childWindow) == NULL)//特殊情况
             {
+                //MessageBox(L"MainWindow| 窗口标题 : %s | 窗口类 : %s | 句柄 : %x | 父窗口 : %x |是否可见 : %s |", wcslen(szTitle) ? szTitle : L"无", szClass, childWindow, parentWindow, bIsVisible ? L"是" : L"否");
                 return childWindow;
             }
 
@@ -90,7 +101,7 @@ static HWND TraverseForms()
 
 HWND GetMainWindow()
 {
-    return TraverseForms();
+    return TraceForms();
 }
 
 
@@ -105,8 +116,7 @@ static void ResizeWindow(HWND hWnd) {
 
     SetWindowPos(hWnd, nullptr, rcWindow.left * scaleRatio2, rcWindow.top * scaleRatio2, (rcWindow.right - rcWindow.left) * scaleRatio2, (rcWindow.bottom - rcWindow.top) * scaleRatio2, SWP_NOZORDER | SWP_NOACTIVATE);
     SetWindowPos(hWnd, nullptr, rcWindow.left * scaleRatio, rcWindow.top * scaleRatio, (rcWindow.right - rcWindow.left) * scaleRatio, (rcWindow.bottom - rcWindow.top) * scaleRatio, SWP_NOZORDER | SWP_NOACTIVATE);
-
-
+    
     //ShowWindow(hWnd, SW_MINIMIZE);
     //ShowWindow(hWnd, SW_RESTORE);
 
@@ -168,24 +178,24 @@ static void OnExitHandler()
 }
 
 
-LRESULT CALLBACK NewWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+LRESULT CALLBACK NewWindowProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
 
     case WM_CLOSE:
-        //MessageBox(hwnd, L"Window is closing!", L"Notification", MB_OK);
+        //MessageBox(hWnd, L"Window is closing!", L"Notification", MB_OK);
         OnExitHandler();
-        //DestroyWindow(hwnd);//会导致DLL_PROCESS_DETACH失败
+        //DestroyWindow(hWnd);//会导致DLL_PROCESS_DETACH失败
         break;
 
     case WM_PAINT:
-        //MessageBox(hwnd, L"WM_PAINT", L"Notification", MB_OK);
+        //MessageBox(hWnd, L"WM_PAINT", L"Notification", MB_OK);
         break;
     case WM_SET_HOOK:
-        //SetHook(ON);//要在主线程内才能挂钩
+        SetHook(ON);//要在主线程内才能挂钩
         break;
 
     case WM_RESIZE_FORM:
-        ResizeWindow(hwnd);
+        ResizeWindow(hWnd);
         break;
 
     case WM_DESTROY:
@@ -194,12 +204,12 @@ LRESULT CALLBACK NewWindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPara
 
     default:
         if (g_bHome)
-            //MessageBox(hwnd, std::to_wstring(uMsg).c_str(), L"Notification", MB_OK);
-            //Log(std::to_wstring(uMsg)+L" | "+ std::to_wstring(wParam)+L" | "+ std::to_wstring(lParam));
+            //MessageBox(hWnd, std::to_wstring(uMsg).c_str(), L"Notification", MB_OK);
+            //Log((std::to_wstring(uMsg)+L" | "+ std::to_wstring(wParam)+L" | "+ std::to_wstring(lParam)).c_str());
             break;
     }
 
-    return CallWindowProc(oWndProc, hwnd, uMsg, wParam, lParam);
+    return CallWindowProc(oWndProc, hWnd, uMsg, wParam, lParam);
 }
 
 
@@ -216,7 +226,7 @@ void thread_main()
         return;
     }
 
-
+ 
     oWndProc = (WNDPROC)SetWindowLongPtr(g_MainWindow, GWLP_WNDPROC, (LONG_PTR)NewWindowProc);
 
     if (oWndProc == 0) {
@@ -305,6 +315,7 @@ void thread_check_debugger()
     //Console();//会导致后面智能指针阻塞，又一个坑
 
     //std::cout << "Start......!" << std::endl;
+
     while (1)
     {
         if (ShareMemory(&g_shared_data))
@@ -346,6 +357,8 @@ static void Init()
 {
     std::unique_ptr<std::thread> t0(new std::thread(thread_check_debugger));
     t0->join();
+
+    //CreateThread(NULL, NULL, (LPTHREAD_START_ROUTINE)thread_main, NULL, NULL,NULL);//调试用
 }
 
 
