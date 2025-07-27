@@ -37,6 +37,15 @@ void* GetWindowUserData(HWND hWnd)
     return reinterpret_cast<void*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 }
 
+//获取实例句柄
+HINSTANCE GetWindowInstance(HWND hWnd)
+{
+    // 从窗口中获取实例句柄
+    return (HINSTANCE)GetWindowLongPtr(hWnd, GCLP_HMODULE);
+}
+
+
+
 static HWND TraceForms()
 {
     // 目标进程ID，你需要替换成你要遍历的进程ID
@@ -70,16 +79,24 @@ static HWND TraceForms()
             bool bIsVisible = IsWindowVisible(childWindow);
 
             DWORD parentWindowPid;
-            GetWindowThreadProcessId(parentWindow, &parentWindowPid);
+
+            if (parentWindow != NULL)
+            {
+                GetWindowThreadProcessId(parentWindow, &parentWindowPid);
+            }
+            else
+            {
+                parentWindowPid = 0;
+            }
             
 
-            if (parentWindow == NULL && bIsVisible)//基本情况
+            if (parentWindow == NULL && bIsVisible && !wcsstr(szClass,L"wxWindowNR"))//基本情况
             {
-                //Log(L"MainWindow| 窗口标题 : %s | 窗口类 : %s | 句柄 : %x | 父窗口 : %x |是否可见 : %s |", wcslen(szTitle) ? szTitle : L"无", szClass, childWindow, parentWindow, bIsVisible ? L"是" : L"否");
+                //MessageBox(L"MainWindow| 窗口标题 : %s | 窗口类 : %s | 句柄 : %x | 父窗口 : %x |是否可见 : %s |", wcslen(szTitle) ? szTitle : L"无", szClass, childWindow, parentWindow, bIsVisible ? L"是" : L"否");
                 return childWindow;
             }
 
-            if (parentWindowPid != targetProcessId && bIsVisible && GetWindowUserData(childWindow) == NULL)//特殊情况
+            if (parentWindowPid != targetProcessId && bIsVisible && GetWindowUserData(childWindow) == NULL && (qw)GetWindowInstance(childWindow)>0 && !wcsstr(szClass, L"wxWindowNR"))//特殊情况
             {
                 //MessageBox(L"MainWindow| 窗口标题 : %s | 窗口类 : %s | 句柄 : %x | 父窗口 : %x |是否可见 : %s |", wcslen(szTitle) ? szTitle : L"无", szClass, childWindow, parentWindow, bIsVisible ? L"是" : L"否");
                 return childWindow;
