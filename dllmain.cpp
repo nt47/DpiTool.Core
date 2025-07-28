@@ -96,12 +96,13 @@ static HWND TraceForms()
                 return childWindow;
             }
 
-            if (parentWindowPid != targetProcessId && bIsVisible && GetWindowUserData(childWindow) == NULL && (qw)GetWindowInstance(childWindow)>0 && !wcsstr(szClass, L"wxWindowNR"))//特殊情况
+            if (parentWindowPid !=0 && parentWindowPid != targetProcessId && bIsVisible && GetWindowUserData(childWindow) == NULL && (qw)GetWindowInstance(childWindow)>0 && !wcsstr(szClass, L"wxWindowNR"))//特殊情况
             {
                 //MessageBox(L"MainWindow| 窗口标题 : %s | 窗口类 : %s | 句柄 : %x | 父窗口 : %x |是否可见 : %s |", wcslen(szTitle) ? szTitle : L"无", szClass, childWindow, parentWindow, bIsVisible ? L"是" : L"否");
                 return childWindow;
             }
 
+            //MessageBox(L"| 窗口标题 : %s | 窗口类 : %s | 句柄 : %x | 父窗口 : %x |是否可见 : %s |", wcslen(szTitle) ? szTitle : L"无", szClass, childWindow, parentWindow, bIsVisible ? L"是" : L"否");
             //Log(L"| 窗口标题 : %s | 窗口类 : %s | 句柄 : %x | 父窗口 : %x |是否可见 : %s |", wcslen(szTitle)? szTitle:L"无", szClass, childWindow, parentWindow, bIsVisible ? L"是" : L"否");
 
 
